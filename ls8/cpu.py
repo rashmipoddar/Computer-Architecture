@@ -33,6 +33,27 @@ class CPU:
             address += 1
             # print(self.ram)
 
+    def load_dynamic(self, filename):
+        address = 0
+        print('Filename passed to the load function: ', filename)
+        try:
+            with open(filename) as f:
+                # The filename takes the path of the file to open like examples/print8.ls8
+                for line in f:
+                    # Ignore comments
+                    comment_split = line.split("#")
+                    # Strip out whitespace
+                    num = comment_split[0].strip()
+                    # Ignore blank lines
+                    if num == '':
+                        continue    
+                    val = int(num, 2)
+                    self.ram[address] = val
+                    address += 1
+        except FileNotFoundError:
+            print("File not found")
+            sys.exit(2)
+
     def alu(self, op, reg_a, reg_b):
         """ALU operations."""
 
