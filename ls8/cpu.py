@@ -7,14 +7,7 @@ class CPU:
 
     def __init__(self):
         """Construct a new CPU."""
-        self.R0 = [0] * 8
-        self.R1 = [0] * 8
-        self.R2 = [0] * 8
-        self.R3 = [0] * 8
-        self.R4 = [0] * 8
-        self.R5 = [0] * 8
-        self.R6 = [0] * 8
-        self.R7 = [0] * 8
+        self.register = [0] * 8
         self.pc = 0
         self.ram = [0] * 256
 
@@ -78,11 +71,28 @@ class CPU:
     def run(self):
         """Run the CPU."""
         running = True
-        pc = 0
-
+        
+        LDI = 0b10000010
+        PRN = 0b01000111
+        HLT = 0b00000001
+            
         while running:
-            operand_a = self.ram_read(pc+1)
-            operand_b = self.ram_read(pc+2)
-            print(operand_a)
-            print(operand_b)
-            running = False
+            command = self.ram[self.pc]
+            if command == LDI:
+                operand_a = self.ram_read(self.pc + 1)
+                operand_b = self.ram_read(self.pc + 2)
+                self.register[operand_a] = operand_b
+                self.pc += 3
+
+            elif command == PRN:
+                operand_a = self.ram_read(self.pc + 1)
+                print(self.register[operand_a])
+                self.pc += 2
+
+            elif command == HLT:
+                running = False
+                self.pc += 1
+
+            else:
+                print(f"Unknown instruction: {command}")
+                sys.exit(1)
