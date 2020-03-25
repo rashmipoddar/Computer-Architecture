@@ -4,11 +4,16 @@ import sys
 
 class CPU:
     """Main CPU class."""
+    """ 
+    1 byte = 8 bits  
+    Each bit can contain either 0 or 1 so we have 2 possibilities for each bit 
+    and 2^8 = 256 possibilities for 8 bits and the numbers are from 0 to 255 .
+    """
 
     def __init__(self):
         """Construct a new CPU."""
         self.register = [0] * 8
-        self.pc = 0
+        self.pc = 0 # Program counter i.e. the current instruction
         self.ram = [0] * 256
 
     def load(self):
@@ -35,7 +40,7 @@ class CPU:
 
     def load_dynamic(self, filename):
         address = 0
-        print('Filename passed to the load function: ', filename)
+        # print('Filename passed to the load function: ', filename)
         try:
             with open(filename) as f:
                 # The filename takes the path of the file to open like examples/print8.ls8
@@ -47,19 +52,21 @@ class CPU:
                     # Ignore blank lines
                     if num == '':
                         continue    
-                    val = int(num, 2)
-                    self.ram[address] = val
+                    value = int(num, 2)
+                    self.ram_write(address, value)
                     address += 1
         except FileNotFoundError:
             print("File not found")
             sys.exit(2)
+        # print(self.ram)
 
     def alu(self, op, reg_a, reg_b):
         """ALU operations."""
 
         if op == "ADD":
-            self.reg[reg_a] += self.reg[reg_b]
-        #elif op == "SUB": etc
+            self.register[reg_a] += self.register[reg_b]
+        elif op == "MUL":
+            self.register[reg_a] = self.register[reg_a] * self.register[reg_b]
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -96,6 +103,7 @@ class CPU:
         LDI = 0b10000010
         PRN = 0b01000111
         HLT = 0b00000001
+        MUL = 0b10100010
             
         while running:
             command = self.ram[self.pc]
@@ -113,6 +121,12 @@ class CPU:
             elif command == HLT:
                 running = False
                 self.pc += 1
+
+            elif command == MUL:
+                operand_a = self.ram_read(self.pc + 1)
+                operand_b = self.ram_read(self.pc + 2)
+                self.alu('MUL', operand_a, operand_b)
+                self.pc += 3
 
             else:
                 print(f"Unknown instruction: {command}")
