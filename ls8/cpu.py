@@ -15,6 +15,8 @@ class CPU:
         self.register = [0] * 8
         self.pc = 0 # Program counter i.e. the current instruction
         self.ram = [0] * 256
+        self.stack_pointer = self.register[7]
+        self.register[7] = 0xF4
 
     def load(self):
         """Load a program into memory."""
@@ -98,12 +100,15 @@ class CPU:
 
     def run(self):
         """Run the CPU."""
+        # print('Register: ', self.register)
         running = True
         
         LDI = 0b10000010
         PRN = 0b01000111
         HLT = 0b00000001
         MUL = 0b10100010
+        PUSH = 0b01000101
+        POP = 0b01000110
             
         while running:
             command = self.ram[self.pc]
@@ -127,6 +132,25 @@ class CPU:
                 operand_b = self.ram_read(self.pc + 2)
                 self.alu('MUL', operand_a, operand_b)
                 self.pc += 3
+
+            elif command == PUSH:
+                # Push the value in the given register on the stack.
+                operand_a = self.ram_read(self.pc + 1)
+                value = self.register[operand_a]
+                # 1. Decrement the `SP`.
+                self.stack_pointer -= 1
+                # 2. Copy the value in the given register to the address pointed to by `SP`.
+                self.ram[self.stack_pointer] = value
+                self.pc += 2
+
+            elif command == POP:
+                # Pop the value at the top of the stack into the given register.
+                operand_a = self.ram_read(self.pc + 1)
+                # 1. Copy the value from the address pointed to by `SP` to the given register.
+                self.register[operand_a] = self.ram[self.stack_pointer]
+                # 2. Increment `SP`.
+                self.stack_pointer += 1
+                self.pc += 2
 
             else:
                 print(f"Unknown instruction: {command}")
