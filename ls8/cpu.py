@@ -88,7 +88,7 @@ class CPU:
         ), end='')
 
         for i in range(8):
-            print(" %02X" % self.reg[i], end='')
+            print(" %02X" % self.register[i], end='')
 
         print()
 
@@ -100,15 +100,18 @@ class CPU:
 
     def run(self):
         """Run the CPU."""
-        # print('Register: ', self.register)
+        print('Register: ', self.register)
         running = True
         
         LDI = 0b10000010
         PRN = 0b01000111
         HLT = 0b00000001
         MUL = 0b10100010
+        ADD = 0b10100000
         PUSH = 0b01000101
         POP = 0b01000110
+        CALL = 0b01010000
+        RET = 0b00010001
             
         while running:
             command = self.ram[self.pc]
@@ -133,6 +136,12 @@ class CPU:
                 self.alu('MUL', operand_a, operand_b)
                 self.pc += 3
 
+            elif command == ADD:
+                operand_a = self.ram_read(self.pc + 1)
+                operand_b = self.ram_read(self.pc + 2)
+                self.alu('ADD', operand_a, operand_b)
+                self.pc += 3
+
             elif command == PUSH:
                 # Push the value in the given register on the stack.
                 operand_a = self.ram_read(self.pc + 1)
@@ -151,6 +160,21 @@ class CPU:
                 # 2. Increment `SP`.
                 self.stack_pointer += 1
                 self.pc += 2
+
+            elif command == CALL:
+                operand_a = self.ram_read(self.pc + 1)
+                # The address of the ***instruction*** _directly after_ `CALL` is pushed onto the stack. 
+                # This allows us to return to where we left off when the subroutine finishes executing.
+                self.stack_pointer -= 1
+                self.ram[self.stack_pointer] = self.pc + 2
+                # The PC is set to the address stored in the given register. We jump to that location in RAM and execute the first instruction in the subroutine.
+                # The PC can move forward or backwards from its current location.
+                self.pc = self.register[operand_a]
+
+            elif command == RET:
+                # Pop the value from the top of the stack and store it in the `PC`.
+                self.pc = self.ram[self.stack_pointer]
+                self.stack_pointer += 1
 
             else:
                 print(f"Unknown instruction: {command}")
