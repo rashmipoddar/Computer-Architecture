@@ -17,6 +17,7 @@ class CPU:
         self.ram = [0] * 256
         self.stack_pointer = self.register[7]
         self.register[7] = 0xF4
+        self.flags = [0, 0, 0, 0, 0, 'L', 'G', 'E']
 
     def load(self):
         """Load a program into memory."""
@@ -69,6 +70,19 @@ class CPU:
             self.register[reg_a] += self.register[reg_b]
         elif op == "MUL":
             self.register[reg_a] = self.register[reg_a] * self.register[reg_b]
+        elif op == "CMP":
+            if self.register[reg_a] == self.register[reg_b]:
+                self.flags[7] = 1
+            else:
+                self.flags[7] = 0
+            if self.register[reg_a] < self.register[reg_b]:
+                self.flags[5] = 1
+            else:
+                self.flags[5] = 0
+            if self.register[reg_a] > self.register[reg_b]:
+                self.flags[6] = 1
+            else:
+                self.flags[6] = 0
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -112,9 +126,15 @@ class CPU:
         POP = 0b01000110
         CALL = 0b01010000
         RET = 0b00010001
+        CMP = 0b10100111
+        JMP = 0b01010100
+        JEQ = 0b01010101
+        JNE = 0b01010110
             
         while running:
             command = self.ram[self.pc]
+            # print('Command : ', command)
+            # print('Register: ', self.register)
             if command == LDI:
                 operand_a = self.ram_read(self.pc + 1)
                 operand_b = self.ram_read(self.pc + 2)
@@ -127,6 +147,7 @@ class CPU:
                 self.pc += 2
 
             elif command == HLT:
+                print('Halting')
                 running = False
                 self.pc += 1
 
@@ -175,6 +196,32 @@ class CPU:
                 # Pop the value from the top of the stack and store it in the `PC`.
                 self.pc = self.ram[self.stack_pointer]
                 self.stack_pointer += 1
+
+            elif command == CMP:
+                operand_a = self.ram_read(self.pc + 1)
+                operand_b = self.ram_read(self.pc + 2)
+                self.alu('CMP', operand_a, operand_b)
+                self.pc += 3
+
+            elif command == JMP:
+                operand_a = self.ram_read(self.pc + 1)
+                pc = self.register[operand_a]
+
+            elif command == JEQ:
+                # If `equal` flag is set (true), jump to the address stored in the given register.
+                operand_a = self.ram_read(self.pc + 1)
+                if self.flags[7] == 1:
+                    self.pc = self.register[operand_a]
+                else :
+                    self.pc += 2
+
+            elif command == JNE:
+                # If `E` flag is clear (false, 0), jump to the address stored in the given register.
+                operand_a = self.ram_read(self.pc + 1)
+                if self.flags[7] != 1:
+                    self.pc = self.register[operand_a]
+                else :
+                    self.pc += 2
 
             else:
                 print(f"Unknown instruction: {command}")
